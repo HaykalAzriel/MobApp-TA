@@ -4,6 +4,7 @@ import 'package:figma/Auth.dart';
 import 'package:figma/DownloadsPage.dart';
 import 'package:figma/HostPage.dart';
 import 'package:figma/MethodsPage.dart';
+import 'package:figma/ResetPasswordPage.dart';
 import 'package:figma/WatermarkPage.dart';
 import 'package:figma/image_state.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2d2p1dWJkZ2VpY2lhcWllZnhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NTM0NjcsImV4cCI6MjA2NTMyOTQ2N30.P0YnlzHkEya7qp_KytWEg0Vjh7392bkxg7v1Ml6BNgg',
   );
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
   runApp(
     ChangeNotifierProvider(
       create: (_) => ImageState(),
@@ -43,9 +44,51 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: const SplashHandler(),
       debugShowCheckedModeBanner: false,
     );
+  }
+}
+
+class SplashHandler extends StatefulWidget {
+  const SplashHandler({super.key});
+
+  @override
+  State<SplashHandler> createState() => _SplashHandlerState();
+}
+
+class _SplashHandlerState extends State<SplashHandler> {
+  @override
+  void initState() {
+    super.initState();
+    _navigate();
+  }
+
+  void _navigate() async {
+    // Tampilkan splash selama minimal 2 detik
+    await Future.delayed(const Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isloggedin') ?? false;
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainHomePage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const WelcomePage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const SplashScreen(); // Halaman splash custom (logo/animasi)
   }
 }
 
@@ -667,8 +710,27 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 1),
+              // Forgot Password
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    // Aksi ketika tombol "Forgot Password" ditekan
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordPage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "Forgot Password?",
+                    style: TextStyle(color: Color(0xFF0004FF)),
+                  ),
+                ),
+              ),
               const SizedBox(height: 40),
-
               // Tombol Log In
               SizedBox(
                 width: double.infinity,
@@ -793,7 +855,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
             Text(
               "Verify Your Email",
               style: GoogleFonts.poppins(
-                fontSize: 24,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),

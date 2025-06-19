@@ -7,6 +7,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('is_logged_in') ?? false;
+  }
+
+  Future<void> setLoginStatus(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', value);
+  }
+
   Future<bool> signUpWithEmail(String email, String password) async {
     try {
       final response = await _supabase.auth.signUp(
@@ -43,7 +53,14 @@ class AuthService {
         password: password,
       );
 
-      return response.session != null;
+      if (response.session != null) {
+        await setLoginStatus(true);
+        print('User logged in successfully.');
+        return true;
+      } else {
+        print('Login failed: No session found.');
+        return false;
+      }
     } catch (e) {
       print('Login error: \$e');
       return false;
@@ -60,33 +77,53 @@ class AuthService {
   }
 
   Future<bool> resendOtp(String email, String password) async {
-  try {
-    await _supabase.auth.signUp(
-      email: email,
-      password: password,
-    );
+    try {
+      await _supabase.auth.signUp(email: email, password: password);
 
-    print("OTP resend triggered.");
-    return true;
-  } catch (e) {
-    print('Resend OTP error: $e');
-    return false;
+      print("OTP resend triggered.");
+      return true;
+    } catch (e) {
+      print('Resend OTP error: $e');
+      return false;
+    }
+  }
+
+  // Kirim OTP ke email untuk reset password
+  Future<void> sendResetToken(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+    } catch (e) {
+      throw Exception("Gagal mengirim token: $e");
+    }
+  }
+
+  // Verifikasi token dan simpan session sementara
+  Future<void> verifyToken({required String email, required String otp}) async {
+    try {
+      await _supabase.auth.verifyOTP(
+        type: OtpType.recovery,
+        token: otp,
+        email: email,
+      );
+    } catch (e) {
+      throw Exception("OTP tidak valid: $e");
+    }
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+    } catch (e) {
+      throw Exception("Gagal update password: $e");
+    }
   }
 }
 
-}
 
 
 
-  // Future<void> logout(BuildContext context) async {
-  //   await supabase.auth.signOut();
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   prefs.setBool('isLoggedIn', false);
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(builder: (context) => const LoginPage()),
-  //   );
-  // }
+
+
 
   // Future<void> resetPassword(BuildContext context, String email) async {
   //   try {
