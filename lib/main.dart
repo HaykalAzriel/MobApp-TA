@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:figma/Auth.dart';
 import 'package:figma/DownloadsPage.dart';
 import 'package:figma/HostPage.dart';
+import 'package:figma/Identity.dart';
 import 'package:figma/MethodsPage.dart';
 import 'package:figma/ResetPasswordPage.dart';
 import 'package:figma/WatermarkPage.dart';
@@ -47,6 +48,70 @@ class MyApp extends StatelessWidget {
       home: const SplashHandler(),
       debugShowCheckedModeBanner: false,
     );
+  }
+}
+
+class EntryPoint extends StatefulWidget {
+  const EntryPoint({super.key});
+
+  @override
+  State<EntryPoint> createState() => _EntryPointState();
+}
+
+class _EntryPointState extends State<EntryPoint> {
+  bool _isLoading = true;
+  Widget? _initialPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUser();
+  }
+
+  Future<void> _checkUser() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    Widget nextPage;
+
+    if (user == null) {
+      nextPage = const LoginPage();
+    } else {
+      try {
+        final profile =
+            await Supabase.instance.client
+                .from('profiles')
+                .select()
+                .eq('id', user.id)
+                .maybeSingle(); // <- ini lebih aman daripada .single()
+
+        if (profile == null ||
+            profile['full_name'] == null ||
+            profile['username'] == null ||
+            profile['avatar_url'] == null ||
+            (profile['full_name'] as String).isEmpty ||
+            (profile['username'] as String).isEmpty ||
+            (profile['avatar_url'] as String).isEmpty) {
+          nextPage = NamePage(userId: user.id);
+        } else {
+          nextPage = const MainHomePage();
+        }
+      } catch (e) {
+        nextPage = const LoginPage(); // fallback jika Supabase error
+      }
+    }
+
+    setState(() {
+      _initialPage = nextPage;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return _initialPage!;
   }
 }
 
@@ -123,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFB1E3E4),
+      backgroundColor: const Color(0xFF67EFC4),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -590,17 +655,33 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (success) {
-      // Navigasi ke HomePage atau halaman utama
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => MainHomePage(),
-        ), // ganti HomePage sesuai dengan app Anda
-      );
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user != null) {
+        final existingProfile =
+            await Supabase.instance.client
+                .from('profiles')
+                .select()
+                .eq('id', user.id)
+                .maybeSingle();
+
+        if (existingProfile == null) {
+          await Supabase.instance.client.from('profiles').insert({
+            'id': user.id,
+            'email': user.email,
+          });
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EntryPoint(), // ← INI PENTING
+          ),
+        );
+      }
     } else {
-      // Tampilkan notifikasi gagal login
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Login gagal. Periksa kembali email dan password."),
         ),
       );
@@ -811,6 +892,13 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
     if (success) {
       _showSuccessDialog();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        await Supabase.instance.client.from('profiles').upsert({
+          'id': user.id,
+          'email': widget.email,
+        });
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("OTP salah atau sudah kadaluarsa.")),

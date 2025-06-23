@@ -1,5 +1,6 @@
 import 'package:figma/Auth.dart';
 import 'package:figma/main.dart';
+import 'package:figma/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -35,7 +36,12 @@ class SettingsPage extends StatelessWidget {
             _buildSettingTile(
               icon: Icons.person,
               label: "Account",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+              },
             ),
             const SizedBox(height: 20),
             _buildSettingTile(

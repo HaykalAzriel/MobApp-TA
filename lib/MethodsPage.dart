@@ -5,9 +5,40 @@ import 'package:figma/image_state.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class MethodsPage extends StatelessWidget {
+class MethodsPage extends StatefulWidget {
   const MethodsPage({super.key});
+
+  @override
+  State<MethodsPage> createState() => _MethodsPageState();
+}
+
+class _MethodsPageState extends State<MethodsPage> {
+  String? username;
+  String? avatarUrl;
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final response =
+          await Supabase.instance.client
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', userId)
+              .single();
+
+      setState(() {
+        username = response['username'] ?? 'Capstone Design';
+        avatarUrl = response['avatar_url'];
+      });
+    }
+  }
+
   void _showMethodDialog(BuildContext context) {
     final methods = [
       "DWT-DST-QRD-SS",
@@ -143,15 +174,21 @@ class MethodsPage extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(height: 60),
-                const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person),
+                CircleAvatar(
+                  backgroundImage:
+                      avatarUrl != null && avatarUrl!.isNotEmpty
+                          ? NetworkImage(avatarUrl!)
+                          : null,
+                  child:
+                      avatarUrl == null || avatarUrl!.isEmpty
+                          ? const Icon(Icons.person)
+                          : null,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Hi, Welcome\nCapstone Design',
-                    style: TextStyle(
+                    'Hi, Welcome\n${username ?? 'Capstone Design'}',
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
