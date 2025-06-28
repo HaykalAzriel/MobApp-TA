@@ -42,6 +42,11 @@ class _NamePageState extends State<NamePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Icon(Icons.arrow_back_ios, size: 20),
+            ),
             const SizedBox(height: 50),
             const Text(
               "What is your name?",
@@ -49,7 +54,25 @@ class _NamePageState extends State<NamePage> {
             ),
             const SizedBox(height: 16),
             const Text("Full name"),
-            TextField(controller: fullNameController),
+            const SizedBox(height: 16),
+            TextField(
+              controller: fullNameController,
+              decoration: InputDecoration(
+                hintText: 'Insert your name here',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.black),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.black),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.black, width: 1.5),
+                ),
+              ),
+            ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _continueToUsername,
@@ -65,7 +88,7 @@ class _NamePageState extends State<NamePage> {
                 style: TextStyle(color: Colors.white),
               ),
             ),
-            const Spacer(),
+
             _buildTermsText(),
           ],
         ),
@@ -122,38 +145,82 @@ class _UsernamePageState extends State<UsernamePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF67EFC4),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            const Text(
-              "Choose a username",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text("Pick a unique username to identify yourself."),
-            const SizedBox(height: 32),
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: "Username"),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _continueToPhotoPage,
-              child: const Text(
-                "Continue",
-                style: TextStyle(color: Colors.white),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // penting untuk rata kiri
+            children: [
+              // Back button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios, size: 20),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0004FF),
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+              const SizedBox(height: 40),
+
+              // Title
+              const Text(
+                "Create Username",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+
+              // Optional subtitle (kalau ingin ditambahkan nanti)
+              // const Text("Pick a unique username to identify yourself."),
+              const SizedBox(height: 24),
+
+              // Label
+              const Text(
+                "Username",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+
+              // Input field
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  hintText: 'Enter username',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.black),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.black),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Colors.black,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 32),
+
+              // Button
+              ElevatedButton(
+                onPressed: _continueToPhotoPage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0004FF),
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+
+              _buildTermsText(),
+            ],
+          ),
         ),
       ),
     );
@@ -323,7 +390,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text("Upload a photo so others know you created the image"),
+            const Text("Click the profile avatars to insert your photo"),
             const SizedBox(height: 32),
             GestureDetector(
               onTap: _pickImage,
@@ -372,7 +439,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
                 style: TextStyle(color: Color(0xFF0004FF)),
               ),
             ),
-            const Spacer(),
+
             _buildTermsText(),
           ],
         ),
@@ -383,22 +450,27 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
 
 Widget _buildTermsText() {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: RichText(
-      text: const TextSpan(
-        text: 'By continuing you accept our ',
-        style: TextStyle(color: Color(0xFF7C7C7C), fontSize: 12),
-        children: [
-          TextSpan(
-            text: 'Term of Service',
-            style: TextStyle(color: Color(0xFF0004FF)),
-          ),
-          TextSpan(text: ' and ', style: TextStyle(color: Color(0xFF7C7C7C))),
-          TextSpan(
-            text: 'Privacy Policy',
-            style: TextStyle(color: Color(0xFF0004FF)),
-          ),
-        ],
+    padding: const EdgeInsets.only(top: 16),
+    child: Center(
+      // Tambahkan ini
+      child: RichText(
+        textAlign:
+            TextAlign.center, // Tambahkan ini agar teks multiline tetap rapi
+        text: const TextSpan(
+          text: 'By continuing you accept our ',
+          style: TextStyle(color: Color(0xFF7C7C7C), fontSize: 12),
+          children: [
+            TextSpan(
+              text: 'Term of Service',
+              style: TextStyle(color: Color(0xFF0004FF)),
+            ),
+            TextSpan(text: ' and ', style: TextStyle(color: Color(0xFF7C7C7C))),
+            TextSpan(
+              text: 'Privacy Policy',
+              style: TextStyle(color: Color(0xFF0004FF)),
+            ),
+          ],
+        ),
       ),
     ),
   );

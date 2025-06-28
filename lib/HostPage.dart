@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class HostPage extends StatefulWidget {
   @override
@@ -15,7 +16,8 @@ class HostPage extends StatefulWidget {
 }
 
 class _HostPageState extends State<HostPage> {
-  File? _image;
+  File? _Image;
+  bool _uploading = false;
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -25,13 +27,58 @@ class _HostPageState extends State<HostPage> {
 
     if (pickedFile != null) {
       setState(() {
-        _image = File(pickedFile.path);
+        _Image = File(pickedFile.path);
       });
 
       Provider.of<ImageState>(
         context,
         listen: false,
       ).setHostImage(File(pickedFile.path));
+      await _uploadHostImage(_Image!);
+    }
+  }
+
+  Future<void> _uploadHostImage(File imageFile) async {
+    setState(() {
+      _uploading = true;
+    });
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw 'User not logged in';
+
+      final fileExt = imageFile.path.split('.').last;
+      final fileName = const Uuid().v4();
+      final filePath = '${user.id}/$fileName.$fileExt';
+
+      // Upload ke bucket storage 'host-image'
+      final storageRes = await Supabase.instance.client.storage
+          .from('host-image')
+          .upload(filePath, imageFile);
+
+      final publicUrl = Supabase.instance.client.storage
+          .from('host-image')
+          .getPublicUrl(filePath);
+
+      // Tambahkan ke tabel sessions
+      await Supabase.instance.client.from('sessions').insert({
+        'user_id': user.id,
+        'host_url': publicUrl,
+
+        'status': 'pending',
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Host image uploaded successfully")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+    } finally {
+      setState(() {
+        _uploading = false;
+      });
     }
   }
 
@@ -59,6 +106,7 @@ class _HostPageState extends State<HostPage> {
 
   @override
   Widget build(BuildContext context) {
+    final _Image = Provider.of<ImageState>(context).hostImage;
     return FutureBuilder(
       future:
           Supabase.instance.client
@@ -192,11 +240,11 @@ class _HostPageState extends State<HostPage> {
                       color: Colors.white,
                     ),
                     child:
-                        _image != null
+                        _Image != null
                             ? ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.file(
-                                _image!,
+                                _Image!,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                               ),
@@ -230,6 +278,11 @@ class _HostPageState extends State<HostPage> {
                             ),
                   ),
                 ),
+                if (_uploading)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
           ),

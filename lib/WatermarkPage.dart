@@ -8,14 +8,19 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class WatermarkPage extends StatefulWidget {
+  final String sessionId; // Kirim ID sesi dari page sebelumnya
+
+  const WatermarkPage({Key? key, required this.sessionId}) : super(key: key);
   @override
   _WatermarkPageState createState() => _WatermarkPageState();
 }
 
 class _WatermarkPageState extends State<WatermarkPage> {
   File? _image;
+  bool _uploading = false;
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -31,6 +36,65 @@ class _WatermarkPageState extends State<WatermarkPage> {
         context,
         listen: false,
       ).setWatermarkImage(File(pickedFile.path));
+      await _uploadWatermarkImage(_image!);
+    }
+  }
+
+  Future<void> _uploadWatermarkImage(File imagefile) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || _image == null) return;
+
+    setState(() => _uploading = true);
+
+    final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.png';
+
+    try {
+      // Upload ke storage bucket watermark-image
+      final storageResponse = await Supabase.instance.client.storage
+          .from('watermark-image')
+          .upload('public/$fileName', _image!);
+
+      final publicUrl = Supabase.instance.client.storage
+          .from('watermark-image')
+          .getPublicUrl('public/$fileName');
+
+      // Cari session terakhir milik user
+      final sessionResponse =
+          await Supabase.instance.client
+              .from('sessions')
+              .select()
+              .eq('user_id', user.id)
+              .order('created_at', ascending: false)
+              .limit(1)
+              .maybeSingle(); // Aman dari null
+
+      if (sessionResponse != null && sessionResponse['id'] != null) {
+        final sessionId = sessionResponse['id'] as String;
+
+        // Update kolom watermark_url
+        await Supabase.instance.client
+            .from('sessions')
+            .update({'watermark_url': publicUrl})
+            .eq('id', sessionId);
+      } else {
+        // Jika tidak ada sesi sebelumnya, buat yang baru
+        await Supabase.instance.client.from('sessions').insert({
+          'user_id': user.id,
+          'watermark_url': publicUrl,
+          'host_url': '', // agar tidak null
+          'status': 'pending',
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Watermark image uploaded successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    } finally {
+      setState(() => _uploading = false);
     }
   }
 
@@ -58,6 +122,7 @@ class _WatermarkPageState extends State<WatermarkPage> {
 
   @override
   Widget build(BuildContext context) {
+    final _image = Provider.of<ImageState>(context).watermarkImage;
     return FutureBuilder(
       future:
           Supabase.instance.client
@@ -210,7 +275,7 @@ class _WatermarkPageState extends State<WatermarkPage> {
                                 ),
                                 SizedBox(height: 20),
                                 Text(
-                                  'Browse Host Image',
+                                  'Browse Watermark Image',
                                   style: TextStyle(
                                     color: Color(0xFF0004FF),
                                     fontWeight: FontWeight.bold,
@@ -229,6 +294,11 @@ class _WatermarkPageState extends State<WatermarkPage> {
                             ),
                   ),
                 ),
+                if (_uploading)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
           ),
