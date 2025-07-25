@@ -17,6 +17,12 @@ class MethodsPage extends StatefulWidget {
 class _MethodsPageState extends State<MethodsPage> {
   String? username;
   String? avatarUrl;
+
+  String? _chosenEmbedMethod;
+  String? _chosenAttack;
+  String? _chosenML;
+  String? _chosenDL;
+
   void initState() {
     super.initState();
     _fetchUserProfile();
@@ -51,109 +57,259 @@ class _MethodsPageState extends State<MethodsPage> {
 
     showDialog(
       context: context,
-      builder:
-          (_) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Color(0xFF67EFC4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(
+              color: Color(0xFF0004FF), // warna border dialog
+              width: 2, // ketebalan border
             ),
-            backgroundColor: Colors.white,
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(30.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Methods",
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 24,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  "Choose your preferred embedding technique",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+                const SizedBox(height: 30),
+                // Dropdown
+                DropdownButtonFormField<String>(
+                  value: _chosenEmbedMethod,
+                  items:
+                      methods
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
+                  onChanged: (val) => setState(() => _chosenEmbedMethod = val),
+                  decoration: InputDecoration(
+                    labelText: "Select embedding method",
+                    labelStyle: const TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0), // warna teks label
+                    ),
+                    border: OutlineInputBorder(
+                      // fallback (tidak aktif)
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF0004FF)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      // saat field aktif tapi tidak fokus
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF0004FF)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      // saat field dalam keadaan fokus
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0004FF),
+                        width: 2, // opsional: garis lebih tebal
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed:
+                      _chosenEmbedMethod == null
+                          ? null
+                          : () {
+                            Navigator.of(context).pop();
+                            _showEvaluationDialog(context);
+                          },
+                  child: const Text("Next"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0004FF),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Dialog 2: pilih Attack / ML / DL
+  void _showEvaluationDialog(BuildContext context) {
+    final attackTypes = [
+      "JPEG Compression",
+      "Rotation",
+      "Horizontal Flip",
+      "Random Cropping",
+      "Uniform Scaling",
+      "Gamma Correction",
+      "Color Quantization",
+      "Noise Addition",
+      "Statistical Averaging",
+    ];
+
+    final mlModels = [
+      "Random Forest",
+      "Decision Tree",
+      "Support Vector Machine",
+      "K-Nearest Neighbors",
+    ];
+
+    final dlModels = ["CNN"];
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Color(0xFF67EFC4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(
+              color: Color(0xFF0004FF), // warna border dialog
+              width: 2, // ketebalan border
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      "Methods",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      "Select your preferred algorithm model for evaluation.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text("Select Attack Type :"),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _chosenAttack,
+                    items:
+                        attackTypes
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                    onChanged: (val) => setState(() => _chosenAttack = val),
+                    decoration: _dropdownDecoration("Attack"),
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Text("Select Machine Learning :"),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _chosenML,
+                    items:
+                        mlModels
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                    onChanged: (val) => setState(() => _chosenML = val),
+                    decoration: _dropdownDecoration("Machine Learning"),
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Text("Select Deep Learning :"),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _chosenDL,
+                    items:
+                        dlModels
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                    onChanged: (val) => setState(() => _chosenDL = val),
+                    decoration: _dropdownDecoration("Deep Learning"),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        "Methods",
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text("Cancel"),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        "Choose your preferred embedding technique",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 12),
-                      ),
-                      const SizedBox(height: 20),
-
-                      ...methods.map(
-                        (method) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  selectedMethod == method
-                                      ? const Color(0xFF0004FF)
-                                      : const Color(0xFFEAEAEA),
-                              foregroundColor:
-                                  selectedMethod == method
-                                      ? Colors.white
-                                      : Colors.black,
-                              minimumSize: const Size.fromHeight(40),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                selectedMethod = method;
-                              });
-                            },
-                            child: Text(
-                              method,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      GestureDetector(
-                        onTap:
-                            selectedMethod == null
-                                ? null // jika belum pilih metode, tidak bisa lanjut
-                                : () {
-                                  Navigator.pop(context); // tutup dialog
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed:
+                            (_chosenAttack != null &&
+                                    _chosenML != null &&
+                                    _chosenDL != null)
+                                ? () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => Markitpages(),
                                     ),
                                   );
-                                },
-                        child: Opacity(
-                          opacity: selectedMethod == null ? 0.5 : 1.0,
-                          child: Container(
-                            height: 75,
-                            width: 80,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFB1E3E4),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                "IncPic",
-                                style: GoogleFonts.racingSansOne(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 25,
-                                ),
-                              ),
-                            ),
-                          ),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Method: $_chosenEmbedMethod, Attack: $_chosenAttack, ML: $_chosenML, DL: $_chosenDL",
+                                      ),
+                                    ),
+                                  );
+                                }
+                                : null,
+                        child: const Text("OK"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0004FF),
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                );
-              },
+                ],
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  InputDecoration _dropdownDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF0004FF)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF0004FF)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF0004FF), width: 2),
+      ),
     );
   }
 

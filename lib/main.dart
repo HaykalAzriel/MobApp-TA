@@ -1161,7 +1161,7 @@ class _MainHomePageState extends State<MainHomePage> {
 
   static final List<Widget> _pages = <Widget>[
     HostPage(),
-    WatermarkPage(sessionId: '',),
+    WatermarkPage(sessionId: ''),
     MethodsPage(),
     DownloadsPage(),
   ];
